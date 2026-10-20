@@ -11,8 +11,17 @@ attempts are never joined end-to-end.
 ## Run in RStudio
 
 Open `forecast_movement.R` and click **Source**. Packages `data.table` and
-`forecast` are required and already installed on Kelvin's machine. If moving
-the project, change `DATA_DIR` and `OUT` near the top of the script.
+`forecast` are required. The script finds its data relative to its own folder,
+so keep the unzipped Kaggle data next to this project:
+
+```
+<parent folder>/
+  NFL_Movement_Forecasting/        # this project
+  nfl-big-data-bowl-2027/
+    nfl-big-data-bowl-2027/        # players.csv, combine_tracking.csv, ...
+```
+
+From a terminal: `Rscript forecast_movement.R`.
 
 Outputs appear in `output/`; plots are in `output/plots/`. The script loads the
 84 MB Combine tracking file and a player lookup, not the large NFL game files.
@@ -114,10 +123,10 @@ independent observations, so repeated-attempt evaluation is essential.
 
 ## Sources
 
-- Local data: `C:/Users/Kelvin/Downloads/nfl-big-data-bowl-2027/nfl-big-data-bowl-2027`
+- Local data: `../nfl-big-data-bowl-2027/nfl-big-data-bowl-2027` (relative to this folder)
 - Competition: https://www.kaggle.com/competitions/nfl-big-data-bowl-2027
 - Project plan: https://github.com/M4-on-Github/NFL_Big_Data_Bowl_Kaggle/blob/claude/dreamy-brahmagupta-yuzl00/plan.md
-- Assignment: `C:/Users/Kelvin/Downloads/Project 2026.pdf`
+- Assignment: `Project 2026.pdf` (in this folder)
 
 Use the class's AI-use rules for code assistance and attribution. This package
 contains code and analysis aids, not a submission-ready written report or slides.

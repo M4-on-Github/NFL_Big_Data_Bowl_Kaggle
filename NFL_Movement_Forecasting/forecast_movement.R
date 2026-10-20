@@ -7,8 +7,17 @@ for (pkg in required) if (!requireNamespace(pkg, quietly = TRUE)) {
   stop("Run install.packages(c('data.table', 'forecast')) first.")
 }
 suppressPackageStartupMessages(library(data.table))
-DATA_DIR <- "C:/Users/Kelvin/Downloads/nfl-big-data-bowl-2027/nfl-big-data-bowl-2027"
-OUT <- "C:/Users/Kelvin/Downloads/NFL_Movement_Forecasting/output"
+# Paths are relative to this script: RStudio "Source" sets ofile; Rscript passes --file=.
+SCRIPT_DIR <- tryCatch(dirname(normalizePath(sys.frame(1)$ofile)), error = function(e) {
+  arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+  if (length(arg)) dirname(normalizePath(sub("^--file=", "", arg[1]))) else getwd()
+})
+DATA_DIR <- file.path(SCRIPT_DIR, "..", "nfl-big-data-bowl-2027", "nfl-big-data-bowl-2027")
+OUT <- file.path(SCRIPT_DIR, "output")
+if (!file.exists(file.path(DATA_DIR, "combine_tracking.csv"))) {
+  stop("Kaggle data not found at ", normalizePath(DATA_DIR, mustWork = FALSE),
+       "\nPut the unzipped nfl-big-data-bowl-2027 folder next to NFL_Movement_Forecasting.")
+}
 dir.create(file.path(OUT, "plots"), recursive = TRUE, showWarnings = FALSE)
 N_TRAIN <- 60L
 H <- 10L
