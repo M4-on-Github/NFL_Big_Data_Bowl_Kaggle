@@ -1,0 +1,2 @@
+comparison,difference_MAE,lower_95,upper_95,players
+Holt minus Naive; negative is better,-0.0494119025585785,-0.100360964954874,-0.00256849939172368,31
