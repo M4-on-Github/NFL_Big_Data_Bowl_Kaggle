@@ -1,0 +1,31 @@
+SUPPLEMENTARY CHECK: OTHER PLAYERS ONLY
+All attempts by Rome Odunze are excluded from this table.
+   draft_year attempts players
+        <int>    <int>   <int>
+1:       2023       69      38
+2:       2024       56      30
+   draft_year      method players       MAE      RMSE         ME coverage_80
+        <int>      <char>   <int>     <num>     <num>      <num>       <num>
+1:       2023        Holt      38 0.3007512 0.4878187 -0.2255641   0.7473684
+2:       2023 Damped_Holt      38 0.3155849 0.5119965 -0.2591170   0.7250000
+3:       2023       Naive      38 0.4773158 0.6935645 -0.4689298   0.7644737
+4:       2023         SES      38 0.4773202 0.6935682 -0.4689343   0.7697368
+5:       2024 Damped_Holt      30 0.1820886 0.3087542 -0.1437501   0.9600000
+6:       2024        Holt      30 0.1855277 0.3230363 -0.1380772   0.9700000
+7:       2024       Naive      30 0.2313222 0.3551636 -0.2060667   0.9566667
+8:       2024         SES      30 0.2313246 0.3551657 -0.2060680   0.9583333
+   coverage_95
+         <num>
+1:   0.8947368
+2:   0.8473684
+3:   0.9065789
+4:   0.9105263
+5:   0.9916667
+6:   0.9916667
+7:   0.9916667
+8:   0.9916667
+
+Each attempt is fitted separately. Average attempts within player, then players.
+2023 was development data. 2024 was the original class evaluation.
+These results were already examined before the study was reorganized.
+They are supporting evidence, not a newly untouched confirmation set.

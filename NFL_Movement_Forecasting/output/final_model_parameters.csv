@@ -1,0 +1,5 @@
+method,parameter,estimate
+Holt,alpha,0.994364194132874
+Holt,beta,0.994363558946264
+Holt,l,0.139336064548668
+Holt,b,0.024568163055562

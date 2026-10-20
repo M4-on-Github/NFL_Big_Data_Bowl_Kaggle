@@ -1,0 +1,2 @@
+n_training,first_speed,last_speed,min_speed,max_speed,peak_elapsed_seconds,lag1_acf
+60,0.16,8.436666667,0.083333333,8.636666667,5.20000004768372,0.966012404595403
