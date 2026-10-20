@@ -7,8 +7,33 @@ for (pkg in required) if (!requireNamespace(pkg, quietly = TRUE)) {
   stop("Run install.packages(c('data.table', 'forecast')) first.")
 }
 suppressPackageStartupMessages(library(data.table))
-DATA_DIR <- "C:/Users/Kelvin/Downloads/nfl-big-data-bowl-2027/nfl-big-data-bowl-2027"
-OUT <- "C:/Users/Kelvin/Downloads/NFL_Movement_Forecasting/output"
+# Resolve paths from this script, so RStudio Source and Rscript work regardless
+# of the console's working directory. Environment overrides also support testing.
+locate_project <- function() {
+  source_files <- unlist(lapply(sys.frames(), function(fr) {
+    if (!is.null(fr$ofile)) as.character(fr$ofile) else character()
+  }))
+  cli <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE))
+  candidates <- c(rev(source_files), cli)
+  candidates <- candidates[file.exists(candidates)]
+  if (length(candidates)) return(dirname(normalizePath(candidates[1], winslash = "/")))
+  for (path in c(getwd(), file.path(getwd(), "NFL_Movement_Forecasting"))) {
+    if (file.exists(file.path(path, "forecast_movement.R"))) return(normalizePath(path, winslash = "/"))
+  }
+  stop("Use Source on the saved script, or run it with Rscript.")
+}
+PROJECT_DIR <- locate_project()
+REPO_DIR <- dirname(PROJECT_DIR)
+data_override <- Sys.getenv("NFL_DATA_DIR")
+data_candidates <- if (nzchar(data_override)) data_override else c(
+  file.path(REPO_DIR, "nfl-big-data-bowl-2027", "nfl-big-data-bowl-2027"),
+  file.path(REPO_DIR, "nfl-big-data-bowl-2027"),
+  file.path(REPO_DIR, "data", "raw"), REPO_DIR)
+data_ok <- vapply(data_candidates, function(p) all(file.exists(file.path(
+  p, c("players.csv", "combine_tracking.csv")))), logical(1))
+if (!any(data_ok)) stop("Cannot locate players.csv and combine_tracking.csv. Set NFL_DATA_DIR.")
+DATA_DIR <- normalizePath(data_candidates[which(data_ok)[1]], winslash = "/")
+OUT <- Sys.getenv("NFL_FORECAST_OUTPUT", unset = file.path(PROJECT_DIR, "output"))
 dir.create(file.path(OUT, "plots"), recursive = TRUE, showWarnings = FALSE)
 N_TRAIN <- 60L
 H <- 10L
@@ -142,6 +167,16 @@ params <- rbindlist(lapply(METHODS, function(m) {
   data.table(method = m, parameter = names(p), estimate = as.numeric(p))
 }))
 save_csv(params, "example_training_parameters")
+example_scores <- scores[rep_id == example_id]
+example_scores[, RMSE := sqrt(MSE)]
+save_csv(example_scores, "example_test_accuracy")
+acf_values <- as.numeric(acf(train, lag.max = 20L, plot = FALSE)$acf)
+save_csv(data.table(lag_frames = 0:20, lag_seconds = (0:20) / 10,
+  acf = acf_values, approximate_bound = 1.96 / sqrt(length(train))), "example_training_acf")
+save_csv(data.table(n_training = length(train), first_speed = train[1],
+  last_speed = tail(train, 1), min_speed = min(train), max_speed = max(train),
+  peak_elapsed_seconds = d$elapsed[which.max(train)], lag1_acf = acf_values[2]),
+  "example_exploration")
 
 figure("01_example_speed", function() {
   plot(d$elapsed[1:80], d$s[1:80], type = "l", lwd = 2, col = "#172554",
@@ -164,6 +199,8 @@ for (m in METHODS) {
   good <- res[is.finite(res)]
   lb <- Box.test(good, lag = 10L, type = "Ljung-Box", fitdf = 0)
   diagnostics[[m]] <- data.table(method = m, mean_residual = mean(good),
+    sd_residual = sd(good),
+    lag1_residual_acf = as.numeric(acf(good, lag.max = 1L, plot = FALSE)$acf)[2],
     lag = 10L, unadjusted_ljung_box_p = unname(lb$p.value))
   figure(paste0("03_residuals_", m), function() {
     par(mfrow = c(2, 2), mar = c(4.5, 4.5, 3, 1))
@@ -216,11 +253,20 @@ figure("05_class_comparison", function() {
 # beyond the drill's end. Actual 71:80 are used only for this retrospective check.
 final_fit <- fit_one(d$s[1:70], chosen)
 final_fc <- predict_one(final_fit)
+if (!is.null(final_fit$par)) save_csv(data.table(
+  method = chosen, parameter = names(final_fit$par), estimate = as.numeric(final_fit$par)),
+  "final_model_parameters")
 final <- data.table(frame = 71:80, elapsed = d$elapsed[71:80], actual = d$s[71:80],
   forecast = as.numeric(final_fc$mean), lower_80 = as.numeric(final_fc$lower[, 1]),
   upper_80 = as.numeric(final_fc$upper[, 1]), lower_95 = as.numeric(final_fc$lower[, 2]),
   upper_95 = as.numeric(final_fc$upper[, 2]))
 save_csv(final, "final_ten_frame_forecast")
+final_errors <- score(final$actual, final$forecast)
+save_csv(data.table(method = chosen, MAE = final_errors["MAE"],
+  RMSE = sqrt(final_errors["MSE"]), ME = final_errors["ME"],
+  coverage_80 = mean(final$actual >= final$lower_80 & final$actual <= final$upper_80),
+  coverage_95 = mean(final$actual >= final$lower_95 & final$actual <= final$upper_95)),
+  "final_example_accuracy")
 figure("06_final_ten_frame_forecast", function() {
   draw_prediction(final_fc, 70L, paste(d$display_name[1], "- updated one-second forecast -", chosen))
 })
@@ -239,6 +285,7 @@ figure("07_error_by_horizon", function() {
 })
 
 capture.output({
+  cat("Resolved data directory:", DATA_DIR, "\nResolved output directory:", OUT, "\n\n")
   cat("Question: predict tracked WR speed for the next second of a gauntlet attempt.\n")
   cat("No game tracking loaded; no 2025 outcomes used.\n\nCOHORT\n"); print(cohort)
   cat("\nMETHOD COMPARISON: equal player weighting\n"); print(summary)
@@ -246,6 +293,7 @@ capture.output({
   if (exists("comparison")) { cat("\n2024 PAIRED PLAYER BOOTSTRAP\n"); print(comparison) }
   cat("\nEXAMPLE:", example_name, "\nRule: smallest 2024 player ID, then earliest attempt.\n")
   cat("\nEXAMPLE TRAINING PARAMETERS\n"); print(params)
+  cat("\nEXAMPLE TEST ACCURACY (distinct from class-wide averages)\n"); print(example_scores)
   cat("\nEXAMPLE RESIDUAL DIAGNOSTICS (unadjusted screening p-values)\n"); print(rbindlist(diagnostics))
   cat("\nFINAL UPDATED MODEL\n"); print(final_fit)
   cat("\nFINAL TEN FRAME FORECAST\n"); print(final)

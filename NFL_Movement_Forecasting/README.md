@@ -11,8 +11,19 @@ attempts are never joined end-to-end.
 ## Run in RStudio
 
 Open `forecast_movement.R` and click **Source**. Packages `data.table` and
-`forecast` are required and already installed on Kelvin's machine. If moving
-the project, change `DATA_DIR` and `OUT` near the top of the script.
+`forecast` are required and already installed on Kelvin's machine. The script
+locates itself and resolves the data folder relative to the repository, so it
+works after moving the repository and does not require `setwd()`.
+It checks `nfl-big-data-bowl-2027/nfl-big-data-bowl-2027` first, followed by the
+single-level data folder, `data/raw`, and the repository root.
+
+For a nonstandard layout, set `NFL_DATA_DIR` before sourcing, for example
+`Sys.setenv(NFL_DATA_DIR = "D:/my_data")`. `NFL_FORECAST_OUTPUT` can override the
+output directory. Otherwise outputs are always saved beside this script.
+
+**Read `ASSIGNMENT_AUDIT.md` for the question-by-question audit and verified
+interpretation evidence.** Code and figures are complete; the written report,
+individual slides, and oral presentation are separate outstanding deliverables.
 
 Outputs appear in `output/`; plots are in `output/plots/`. The script loads the
 84 MB Combine tracking file and a player lookup, not the large NFL game files.
@@ -114,7 +125,7 @@ independent observations, so repeated-attempt evaluation is essential.
 
 ## Sources
 
-- Local data: `C:/Users/Kelvin/Downloads/nfl-big-data-bowl-2027/nfl-big-data-bowl-2027`
+- Local data (relative to repository): `nfl-big-data-bowl-2027/nfl-big-data-bowl-2027`
 - Competition: https://www.kaggle.com/competitions/nfl-big-data-bowl-2027
 - Project plan: https://github.com/M4-on-Github/NFL_Big_Data_Bowl_Kaggle/blob/claude/dreamy-brahmagupta-yuzl00/plan.md
 - Assignment: `C:/Users/Kelvin/Downloads/Project 2026.pdf`
