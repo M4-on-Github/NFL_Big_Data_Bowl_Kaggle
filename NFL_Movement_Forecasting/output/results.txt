@@ -1,3 +1,7 @@
+Start with PRIMARY_RESULTS.txt for the single-series investigation.
+SUPPLEMENTARY_RESULTS.txt excludes the primary athlete.
+This file retains the original full-cohort analysis for reproducibility.
+
 Resolved data directory: C:/Users/Kelvin/Desktop/Folders/GitHub/NFL_Big_Data_Bowl_Kaggle/nfl-big-data-bowl-2027/nfl-big-data-bowl-2027 
 Resolved output directory: C:/Users/Kelvin/Desktop/Folders/GitHub/NFL_Big_Data_Bowl_Kaggle/NFL_Movement_Forecasting/output 
 
@@ -64,16 +68,16 @@ EXAMPLE TRAINING PARAMETERS
 EXAMPLE TEST ACCURACY (distinct from class-wide averages)
    rep_id draft_year nfl_id      method       MAE        MSE         ME
     <int>      <int>  <int>      <char>     <num>      <num>      <num>
-1:     70       2024  57130         SES 0.3406700 0.16150227 -0.3406700
-2:     70       2024  57130        Holt 0.1531312 0.03686566 -0.1531312
-3:     70       2024  57130 Damped_Holt 0.1917917 0.05764606 -0.1917917
-4:     70       2024  57130       Naive 0.3406667 0.16150000 -0.3406667
+1:     70       2024  57130        Holt 0.1531312 0.03686566 -0.1531312
+2:     70       2024  57130 Damped_Holt 0.1917917 0.05764606 -0.1917917
+3:     70       2024  57130       Naive 0.3406667 0.16150000 -0.3406667
+4:     70       2024  57130         SES 0.3406700 0.16150227 -0.3406700
    coverage_80 coverage_95      RMSE
          <num>       <num>     <num>
-1:           1           1 0.4018735
-2:           1           1 0.1920043
-3:           1           1 0.2400959
-4:           1           1 0.4018706
+1:           1           1 0.1920043
+2:           1           1 0.2400959
+3:           1           1 0.4018706
+4:           1           1 0.4018735
 
 EXAMPLE RESIDUAL DIAGNOSTICS (unadjusted screening p-values)
         method mean_residual sd_residual lag1_residual_acf   lag

@@ -1,4 +1,5 @@
-# MTH305: Can we forecast receiver speed one second ahead?
+# MTH305 PRIMARY STUDY: one continuous gauntlet attempt by Rome Odunze.
+# Other players are a supplementary robustness check, never a joined time series.
 # Forecast vendor-reported speed in the Combine gauntlet, not future NFL success.
 # 2023 chooses the method. 2024 evaluates that choice. 2025 is excluded.
 
@@ -170,6 +171,45 @@ save_csv(params, "example_training_parameters")
 example_scores <- scores[rep_id == example_id]
 example_scores[, RMSE := sqrt(MSE)]
 save_csv(example_scores, "example_test_accuracy")
+setorder(example_scores, MAE, RMSE)
+primary_preferred <- example_scores$method[1]
+# Keep the previously selected method; the main attempt is not a new tuning set.
+# On the current dataset the single-attempt comparison also favors Holt.
+primary_series <- copy(d[frame <= N_TRAIN + 2L * H,
+  .(nfl_id, event_id, attempt, frame, elapsed, speed_yards_per_second = s)])
+primary_series[, phase := fifelse(frame <= N_TRAIN, "training",
+  fifelse(frame <= N_TRAIN + H, "initial_test", "final_forecast_check"))]
+stopifnot(uniqueN(primary_series$nfl_id) == 1L,
+  uniqueN(primary_series$event_id) == 1L,
+  nrow(primary_series[phase == "training"]) == N_TRAIN,
+  nrow(primary_series[phase == "initial_test"]) == H,
+  nrow(primary_series[phase == "final_forecast_check"]) == H)
+save_csv(primary_series, "primary_time_series")
+figure("05_primary_model_comparison", function() {
+  par(mfrow = c(1, 2), mar = c(5, 5, 4, 1))
+  for (metric in c("MAE", "RMSE")) {
+    values <- example_scores[[metric]]
+    bars <- barplot(values, names.arg = gsub("_", " ", example_scores$method),
+      col = COLORS[example_scores$method], ylim = c(0, max(values) * 1.25),
+      cex.names = .75, ylab = paste(metric, "(yards/second)"),
+      main = paste(d$display_name[1], "- test", metric))
+    text(bars, values, labels = sprintf("%.3f", values), pos = 3)
+  }
+})
+
+# Exclude ALL attempts by the primary athlete from the supplementary evidence.
+# These data have been examined previously: this is a robustness summary, not
+# a newly untouched test set created by the change in presentation.
+other_player_scores <- player_scores[nfl_id != d$nfl_id[1]]
+other_summary <- other_player_scores[, .(players = .N, MAE = mean(MAE),
+  RMSE = sqrt(mean(MSE)), ME = mean(ME), coverage_80 = mean(coverage_80),
+  coverage_95 = mean(coverage_95)), by = .(draft_year, method)]
+setorder(other_summary, draft_year, MAE)
+save_csv(other_summary, "supplementary_other_players")
+other_attempts <- qa[eligible == TRUE & nfl_id != d$nfl_id[1],
+  .(attempts = .N, players = uniqueN(nfl_id)), by = draft_year]
+save_csv(other_attempts, "supplementary_cohort")
+stopifnot(!d$nfl_id[1] %in% other_player_scores$nfl_id)
 acf_values <- as.numeric(acf(train, lag.max = 20L, plot = FALSE)$acf)
 save_csv(data.table(lag_frames = 0:20, lag_seconds = (0:20) / 10,
   acf = acf_values, approximate_bound = 1.96 / sqrt(length(train))), "example_training_acf")
@@ -285,6 +325,38 @@ figure("07_error_by_horizon", function() {
 })
 
 capture.output({
+  cat("PRIMARY INVESTIGATION: ONE PLAYER, ONE ATTEMPT\n")
+  cat(example_name, "\nPlayer ID:", d$nfl_id[1], "\nEvent ID:", d$event_id[1], "\n")
+  cat("Target: tracked speed in yards/second; one observation every 0.1 seconds.\n")
+  cat("Only the first 80 frames of this attempt are used in the main study.\n")
+  cat("Training: frames 1-60 (0.0-5.9 s). Initial test: 61-70 (6.0-6.9 s).\n")
+  cat("Refit: 1-70. Final forecast/check: 71-80 (7.0-7.9 s).\n")
+  cat("No other player's observations enter these fitted time series.\n\n")
+  cat("INITIAL TEN-FRAME TEST COMPARISON\n"); print(example_scores)
+  cat("\nLowest primary test MAE:", primary_preferred, "\n")
+  cat("Retained method from the earlier 2023 development analysis:", chosen, "\n")
+  cat("\nTRAINING PARAMETERS\n"); print(params)
+  cat("\nTRAINING RESIDUAL DIAGNOSTICS\n"); print(rbindlist(diagnostics))
+  cat("\nUPDATED TEN-FRAME FORECAST\n"); print(final)
+  cat("\nFinal MAE:", final_errors["MAE"], "Final RMSE:", sqrt(final_errors["MSE"]), "yd/s\n")
+  cat("\nLimits: one attempt; dependent residuals; undocumented vendor speed smoothing.\n")
+  cat("This is a retrospective case study, not a general athlete-quality result.\n")
+}, file = file.path(OUT, "PRIMARY_RESULTS.txt"))
+
+capture.output({
+  cat("SUPPLEMENTARY CHECK: OTHER PLAYERS ONLY\n")
+  cat("All attempts by", d$display_name[1], "are excluded from this table.\n")
+  print(other_attempts); print(other_summary)
+  cat("\nEach attempt is fitted separately. Average attempts within player, then players.\n")
+  cat("2023 was development data. 2024 was the original class evaluation.\n")
+  cat("These results were already examined before the study was reorganized.\n")
+  cat("They are supporting evidence, not a newly untouched confirmation set.\n")
+}, file = file.path(OUT, "SUPPLEMENTARY_RESULTS.txt"))
+
+capture.output({
+  cat("Start with PRIMARY_RESULTS.txt for the single-series investigation.\n")
+  cat("SUPPLEMENTARY_RESULTS.txt excludes the primary athlete.\n")
+  cat("This file retains the original full-cohort analysis for reproducibility.\n\n")
   cat("Resolved data directory:", DATA_DIR, "\nResolved output directory:", OUT, "\n\n")
   cat("Question: predict tracked WR speed for the next second of a gauntlet attempt.\n")
   cat("No game tracking loaded; no 2025 outcomes used.\n\nCOHORT\n"); print(cohort)
@@ -312,6 +384,8 @@ stopifnot(nrow(final) == H, all(is.finite(final$forecast)),
   all(final$lower_95 <= final$lower_80), all(final$lower_80 <= final$forecast),
   all(final$forecast <= final$upper_80), all(final$upper_80 <= final$upper_95),
   nrow(predictions) == nrow(qa[eligible == TRUE]) * length(METHODS) * H)
-cat("Selected on 2023:", chosen, "\n")
-print(summary)
+cat("Primary investigation:", example_name, "\n")
+print(example_scores[, .(method, MAE, RMSE)])
+cat("Selected on 2023 and retained:", chosen, "\n")
+cat("Start with PRIMARY_RESULTS.txt; other-player checks are in SUPPLEMENTARY_RESULTS.txt.\n")
 cat("Saved outputs to", OUT, "\n")

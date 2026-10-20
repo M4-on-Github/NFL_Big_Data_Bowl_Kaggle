@@ -4,6 +4,42 @@ Audited 2026-10-20 against all three pages of `Project 2026.pdf`, including the
 overview, Tasks 1-7, required products, and academic-integrity guidance.
 This is an evidence checklist and study aid, not a finished written report.
 
+## Updated presentation: one main time series
+
+The main investigation is now **Rome Odunze's one selected gauntlet attempt**.
+Use `output/PRIMARY_RESULTS.txt` and `primary_time_series.csv` first. All main
+time-series plots, ACFs, parameter estimates, residuals, test errors, and the final
+forecast refer to that same attempt. The original class-wide analysis below is
+retained as supporting context, not the main dataset.
+
+The main split is 60 training frames, ten initial test frames, then ten more
+frames for the updated forecast check. Each step is 0.1 seconds. The final fit
+uses frames 1-70 and predicts 71-80; it does not incorporate those future values.
+
+For Task 4, lead with this **single-attempt** comparison:
+
+| Method | Initial-test MAE (yd/s) | Initial-test RMSE (yd/s) |
+| --- | ---: | ---: |
+| Holt | 0.153 | 0.192 |
+| Damped Holt | 0.192 | 0.240 |
+| Naive | 0.341 | 0.402 |
+| SES | 0.341 | 0.402 |
+
+Both error criteria favor Holt here, consistent with the method already chosen
+on 2023. The residual weaknesses described below still apply. Final-window MAE
+is 0.075 yd/s; that is a different window from the initial test, not the same
+model error calculated twice. Use `plots/05_primary_model_comparison.png`.
+
+Only after completing this main account, discuss the other-player check using
+`SUPPLEMENTARY_RESULTS.txt`. It excludes every attempt by Rome, leaving 38 players
+in 2023 and 30 in 2024. The original full-cohort figures below include Rome and
+must not be relabeled as the other-player-only results. The supplement is a
+retrospective robustness summary because these data have already been examined.
+
+This organization directly demonstrates how separate player records become
+separate time series: the primary series contains exactly one player/attempt;
+the supplement averages forecast errors, never joins players' measurements.
+
 ## Overall status
 
 The R analysis supplies the computations and figures for Tasks 1-5. The checklist

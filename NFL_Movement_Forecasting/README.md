@@ -1,7 +1,55 @@
-# One second ahead: forecasting receiver speed at the Combine
+# One second ahead: a time-series study of Rome Odunze
 
-**Question:** After observing six seconds of a receiver's gauntlet attempt, how
-accurately can we forecast the next second of tracked speed?
+**Main question:** After observing the first six seconds of Rome Odunze's first
+recorded 2024 gauntlet attempt, how accurately can we forecast his speed for the
+next second?
+
+## Main investigation: one continuous series
+
+The main dataset is **one player and one attempt**, with speed measured every
+0.1 seconds. We never concatenate different players or attempts. Use
+`output/primary_time_series.csv` to see the exact 80 observations and their roles.
+
+| Part | Frames | Elapsed time | Purpose |
+| --- | --- | --- | --- |
+| Training | 1-60 | 0.0-5.9 seconds | Fit SES, Holt, damped Holt, and naive |
+| Initial test | 61-70 | 6.0-6.9 seconds | Compare the methods on the same next ten observations |
+| Updated fit | 1-70 | 0.0-6.9 seconds | Incorporate the newly observed test block |
+| Final forecast/check | 71-80 | 7.0-7.9 seconds | Forecast another ten observations with intervals |
+
+This attempt contains additional frames after frame 80; they are outside the
+predefined main analysis window. No rows from another attempt enter these fits.
+Rome was selected by the earlier deterministic ID/time rule, not by searching
+for a low error. We are changing the emphasis after examining results, not
+claiming this single-case study was newly preregistered.
+
+Start with `output/PRIMARY_RESULTS.txt`. The main story follows these outputs:
+
+1. `plots/01_example_speed.png`: the time series and forecast boundaries.
+2. `plots/02_training_acf.png`: its training correlogram.
+3. `plots/03_residuals_<method>.png`: residual diagnostics for each method.
+4. `plots/04_one_second_test_<method>.png`: initial test forecasts versus actuals.
+5. `plots/05_primary_model_comparison.png` and `example_test_accuracy.csv`:
+   compare errors for this same attempt, not class averages.
+6. `plots/06_final_ten_frame_forecast.png`: the updated final forecast.
+
+Holt has the lowest initial test MAE (0.153 yd/s) and RMSE (0.192 yd/s) in this
+attempt. It is also the method already selected using 2023, so no method change
+is made. Its final updated forecast has MAE 0.075 yd/s. These are two distinct
+forecast windows; do not confuse either with a class-wide average.
+
+## Supplement: does the result hold for other players?
+
+Use `output/SUPPLEMENTARY_RESULTS.txt` and `supplementary_other_players.csv` only
+after explaining the main time series. These exclude **both of Rome's attempts**:
+2023 contributes 38 other players/69 attempts; 2024 contributes 30 other players/
+56 attempts. Every attempt still receives its own fitted model. Errors, not raw
+time-series measurements, are summarized across players.
+
+The original full-cohort tables and plot 05_class_comparison are preserved for
+reproducibility and include Rome. Do not label those older full-cohort outputs as
+the new other-player-only check. The supplementary data were already examined;
+they are not a new untouched test set.
 
 This replaces the weekly separation idea with a movement forecasting question.
 The target is speed in yards/second, sampled every 0.1 seconds. Ten forecast steps
@@ -40,7 +88,7 @@ an athlete quality score.
 This contributes an evaluated movement baseline and clean attempt extraction to
 the larger project. It does not yet link Combine movement with NFL performance.
 
-## Protocol
+## Original development and evaluation protocol (preserved)
 
 1. Keep WR player rows from `GAUNTLET_DRILL` in 2023 and 2024.
 2. Require at least 80 frames, unique and regular 0.1-second timestamps, and finite
@@ -94,8 +142,8 @@ shows whether the model's nominal uncertainty is credible in these data.
 | Time-series plot and correlogram | Plots 01 and 02 | Describe acceleration, persistence, and the lack of evidence for seasonality |
 | At least two forecasting methods and fitted parameters | Four methods; `example_training_parameters.csv` | Explain level, slope, smoothing, damping, and initial states |
 | Residual time plots, histograms, and residual ACFs | Four plot-03 panels | Look for bias, dependence, changing variance, and outliers |
-| Forecast-versus-test plots and multiple accuracy measures | Four plot-04 figures; `model_comparison.csv` | Compare errors and uncertainty; distinguish one example from class-wide evidence |
-| Model comparison and selection | Plot 05; 2023 selection and separate 2024 evaluation | Discuss whether the development result generalizes and whether MAE/RMSE agree |
+| Forecast-versus-test plots and multiple accuracy measures | Four plot-04 figures; `example_test_accuracy.csv` | Compare errors and uncertainty for the one primary attempt |
+| Model comparison and selection | Plot `05_primary_model_comparison`; earlier 2023 choice retained | Explain why Holt is supported in this attempt; discuss other-player evidence separately |
 | Ten-step forecast with intervals | Plot 06; `final_ten_frame_forecast.csv` | Explain the updated forecast, actual outcome, interval width, and any miss |
 | Written report and individual presentation | Numerical results and figures are supplied | Write your own interpretation and prepare your own presentation |
 
